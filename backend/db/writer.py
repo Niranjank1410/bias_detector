@@ -1,0 +1,127 @@
+# backend/db/writer.py
+"""
+Handles all database write operations.
+
+Responsibilities:
+- Look up source IDs by name
+- Insert articles (skipping duplicates via the UNIQUE constraint on URL)
+- Create story clusters and link articles to them
+"""
+
+from datetime import datetime, date
+from backend.db.client import supabase
+
+def get_source_map() -> dict[str, str]:
+    """
+    Fetches all sources from the DB and returns a name → id mapping.
+    
+    E.g.: {"BBC News": "uuid-1", "Reuters": "uuid-2", ...}
+    This avoids doing a DB lookup for every single article.
+    """
+    response = supabase.table("sources").select("id, name").execute()
+    return {row["name"]: row["id"] for row in response.data}
+
+def insert_articles(articles: list[dict], source_map: dict[str, str]) -> list[str]:
+    """
+    Inserts articles into the database, skipping any that already exist.
+    
+    The 'url' column has a UNIQUE constraint, so inserting a duplicate URL
+    would normally throw an error. on_conflict="ignore" is used to silently
+    skip duplicates instead of failing.
+    
+    Returns:
+        List of inserted article IDs (not including skipped duplicates)
+    """
+    inserted_ids = []
+
+    for article in articles:
+        source_name = article.get("source_name", "")
+        source_id = source_map.get(source_name)
+
+        if not source_id:
+            # The article's source isnt in the DB yet.
+            # It is skipped for now - later auto-creation of sources can be added.
+            print(f"[DB] Unknown source '{source_name}', skipping article: {article['title'][:50]}")
+            continue
+
+        # Build the row to insert
+        row = {
+            "source_id": source_id,
+            "title": article.get("title", ""),
+            "summary": article.get("summary", ""),
+            "body": article.get("body", ""),
+            "url": article.get("url", ""),
+            "published_at": article.get("published_at")
+        }
+
+        try:
+            # upsert with on_conflict="ignore" means:
+            # "insert this row, but if url already exists, do nothing"
+            response = (
+                supabase.table("articles")
+                .upsert(row, on_conflict="url", ignore_duplicates=True)
+                .execute()
+            )
+            if response.data:
+                inserted_ids.append(response.data[0]["id"])
+        except Exception as e:
+            print(f"[DB] Failed to insert article '{article['title'][:50]}': {e}")
+
+    print(f"[DB] Inserted {len(inserted_ids)} new articles")
+    return inserted_ids
+
+def save_clusters(clusters: list[list[dict]], source_map: dict[str, str]):
+    """
+    Saves story clusters and their article links to the database.
+    
+    For each cluster:
+    1. Create a story_clusters row with the canonical headline
+    2. For each article in the cluster, find its DB ID and create
+       a cluster_articles row linking them together
+    """
+
+    from backend.fetcher.clusterer import pick_canonical_headline
+
+    for cluster in clusters:
+        if not cluster:
+            continue
+
+        canonical = pick_canonical_headline(cluster)
+        today = date.today().isoformat()
+
+        try:
+            # Create the cluster record
+            cluster_response = (
+                supabase.table("story_clusters")
+                .insert({
+                    "canonical_headline": canonical,
+                    "event_date": today,
+                })
+                .execute()
+            )
+            cluster_id = cluster_response.data[0]["id"]
+
+            # For each article in this cluster, look up its DB id by URL
+            # and create the cluster_articles link
+
+            for article in cluster:
+                url = article.get("url", "")
+                article_response = (
+                    supabase.table("articles")
+                    .select("id")
+                    .eq("url", url)
+                    .maybe_single()
+                    .execute()
+                )
+
+                if article_response.data:
+                    article_id = article_response.data["id"]
+                    supabase.table("cluster_articles").upsert({
+                        "cluster_id": cluster_id,
+                        "article_id": article_id,
+                    }, on_conflict="cluster_id, article_id", ignore_duplicates=True).execute()
+
+        except Exception as e:
+            print(f"[DB] Failed to save cluster '{canonical[:50]}': {e}")
+    
+    print(f"[DB] Saved {len(clusters)} clusters")
