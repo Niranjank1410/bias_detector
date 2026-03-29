@@ -25,7 +25,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 # This downloads ~90MB on first run and caches it locally afterward.
 # all-MiniLM-L6-v2 is a great balance of speed and accuracy for english text.
 
-print("[Clusterer] Loading ssentence transformer model...")
+print("[Clusterer] Loading sentence transformer model...")
 model = SentenceTransformer("all-MiniLM-L6-v2")
 print("[Clusterer] Model loaded.")
 

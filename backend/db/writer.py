@@ -11,6 +11,17 @@ Responsibilities:
 from datetime import datetime, date
 from backend.db.client import supabase
 
+SOURCE_NAME_ALIASES = {
+    "Al Jazeera English": "Al Jazeera English",  # already fixed in DB, kept for reference
+    "BBC News - Home": "BBC News",
+    "Reuters | Breaking International News": "Reuters",
+    "The Guardian": "The Guardian",
+}
+
+def normalise_source_name(name:str) -> str:
+    """Resolves known RSS feed name variants to our canonical DB name."""
+    return SOURCE_NAME_ALIASES.get(name, name)
+
 def get_source_map() -> dict[str, str]:
     """
     Fetches all sources from the DB and returns a name → id mapping.
@@ -36,7 +47,7 @@ def insert_articles(articles: list[dict], source_map: dict[str, str]) -> list[st
 
     for article in articles:
         source_name = article.get("source_name", "")
-        source_id = source_map.get(source_name)
+        source_id = source_map.get(normalise_source_name(source_name))
 
         if not source_id:
             # The article's source isnt in the DB yet.
@@ -114,12 +125,14 @@ def save_clusters(clusters: list[list[dict]], source_map: dict[str, str]):
                     .execute()
                 )
 
-                if article_response.data:
+                if article_response and article_response.data:
                     article_id = article_response.data["id"]
                     supabase.table("cluster_articles").upsert({
                         "cluster_id": cluster_id,
                         "article_id": article_id,
                     }, on_conflict="cluster_id, article_id", ignore_duplicates=True).execute()
+                else:
+                    print(f"[DB] Article not found in DB, skipping cluster link for: {url[:60]}")
 
         except Exception as e:
             print(f"[DB] Failed to save cluster '{canonical[:50]}': {e}")
