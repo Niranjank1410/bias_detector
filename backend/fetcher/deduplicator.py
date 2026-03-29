@@ -47,7 +47,7 @@ def deduplicate_articles(articles: list[dict]) -> list[dict]:
     # "Biden signs climate bill" and "Climate bill signed by Biden"
     # would score very high, correctly flagging them as the same story.
 
-    SIMILARITY_THRESHOLD = 85   # 0-100, higher = stricter matching
+    SIMILARITY_THRESHOLD = 92   # 0-100, higher = stricter matching
 
     unique_articles = []
     accepted_titles = []
@@ -57,8 +57,22 @@ def deduplicate_articles(articles: list[dict]) -> list[dict]:
         is_duplicate = False
 
         for accepted_title in accepted_titles:
-            score = fuzz.token_sort_ratio(title, accepted_title)
-            if score >= SIMILARITY_THRESHOLD:
+            # token_sort ratio alone is too loose - "Trump signs bill" and
+            # "Biden signs bill" score high just because they share common words.
+            # Thus 2 metrics are combined: token_sort_ratio(word overlap) and 
+            # ratio(character level exact similarity). Both must be high
+            # to call something a duplicate.
+
+            sort_score = fuzz.token_sort_ratio(title, accepted_title)
+            exact_score = fuzz.ratio(title, accepted_title)
+
+            # Not fuzzy-matching very short titles as it gives too many false positives
+            if len(title) < 15:
+                unique_articles.append(article)
+                accepted_titles.append(title)
+
+            # Only flag as duplicate if both scores are high
+            if sort_score >= SIMILARITY_THRESHOLD and exact_score>= 80:
                 is_duplicate = True
                 break   # No need to check once a match is found
         
