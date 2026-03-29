@@ -138,3 +138,41 @@ def save_clusters(clusters: list[list[dict]], source_map: dict[str, str]):
             print(f"[DB] Failed to save cluster '{canonical[:50]}': {e}")
     
     print(f"[DB] Saved {len(clusters)} clusters")
+
+def update_article_ml_fields(article_id: str, category: str, ai_score: float):
+    """
+    Updates an article's ML-generated fields after processing.
+
+    We do this as a separate UPDATE rather than including it in the
+    initial INSERT because the ML models run after the fetch pipeline.
+    """
+    try:
+        supabase.table("articles").update({
+            "category": category,
+            "ai_score": ai_score,
+            "ml_processed": True,
+        }).eq("id", article_id).execute()
+    except Exception as e:
+        print(f"[DB] Failed to update ML fields for article {article_id}: {e}")
+
+
+def save_sentiment_reports(cluster_id: str, article_id: str, source_id: str, sentiment: dict):
+    """
+    Saves a sentiment analysis result to the bias_reports table.
+
+    Args:
+        cluster_id: The story cluster this article belongs to
+        article_id: The article being reported on
+        source_id: The source that published this article
+        sentiment: Dict with label, score keys from the sentiment analyser
+    """
+    try:
+        supabase.table("bias_reports").upsert({
+            "cluster_id": cluster_id,
+            "article_id": article_id,
+            "source_id": source_id,
+            "sentiment_label": sentiment.get("sentiment_label"),
+            "sentiment_score": sentiment.get("sentiment_score"),
+        }, on_conflict="cluster_id,article_id", ignore_duplicates=True).execute()
+    except Exception as e:
+        print(f"[DB] Failed to save sentiment report: {e}")

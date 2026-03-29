@@ -44,6 +44,11 @@ def run_pipeline():
     # Step 6: Store clusters and links
     save_clusters(clusters, source_map)
 
+    # Step 7: Run ML processing on newly inserted articles
+    print("[Pipeline] Starting ML processing stage...")
+    from backend.models.ml_pipeline import run_ml_pipeline
+    run_ml_pipeline()
+
     print("=" * 50)
     print(f"[Pipeline] Done. {len(unique_articles)} articles, {len(clusters)} clusters.")
     print("=" * 50)
