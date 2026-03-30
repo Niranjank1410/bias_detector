@@ -91,7 +91,7 @@ def cluster_articles(articles: list[dict]) -> list[list[dict]]:
     # min_samples: minimum articles to form a cluster. 
     #      1 means even single articles form their own cluster (no noise rejection).
     # metric='precomputed': tells DBSCAN we're providing distances directly.
-    dbscan = DBSCAN(eps = 0.25, min_samples = 1, metric = "precomputed")
+    dbscan = DBSCAN(eps = 0.15, min_samples = 1, metric = "precomputed")
     labels = dbscan.fit_predict(distance_matrix)
 
     # labels is an array like [0, 0, 1, 2, 0, 1, 3, ...]

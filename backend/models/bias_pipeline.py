@@ -9,6 +9,7 @@ Order of operations:
 # backend/models/bias_pipeline.py  
 import os
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
+os.environ["HF_DATASETS_OFFLINE"] = "1"
 
 from backend.models.lexical_framer import run_lexical_framing
 from backend.models.divergence_scorer import score_all_clusters
