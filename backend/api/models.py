@@ -46,7 +46,7 @@ class StoryClusterSummary(BaseModel):
     """Summary of a story cluster for the home page list."""
     id: str
     canonical_headline: str
-    event_data: Optional[date] = None
+    event_date: Optional[date] = None
     category: Optional[str] = None
     divergence_score: Optional[float] = None
     source_count: Optional[int] = None

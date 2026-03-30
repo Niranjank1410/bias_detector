@@ -29,6 +29,10 @@ def run_bias_pipeline():
     # Step 3: Source profiling - roll up signals into per-source profiles
     update_all_source_profiles()
 
+    # Propogate article categories up to clusters
+    from backend.db.writer import update_cluster_categories
+    update_cluster_categories()
+
     print("=" * 50)
     print("Bias Analysis Pipeline - Done")
     print("=" * 50)
