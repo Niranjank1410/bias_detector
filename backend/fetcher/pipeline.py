@@ -49,6 +49,11 @@ def run_pipeline():
     from backend.models.ml_pipeline import run_ml_pipeline
     run_ml_pipeline()
 
+    # Step 8: Run bias analysis pipeline
+    print("[Pipeline] Starting bias analysis stage...")
+    from backend.models.bias_pipeline import run_bias_pipeline
+    run_bias_pipeline()
+
     print("=" * 50)
     print(f"[Pipeline] Done. {len(unique_articles)} articles, {len(clusters)} clusters.")
     print("=" * 50)

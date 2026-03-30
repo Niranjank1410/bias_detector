@@ -11,6 +11,9 @@ We separate this from the fetch pipeline so that:
 3. In production we can run fetch more frequently than ML processing
 """
 
+import os
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
+
 from backend.db.client import supabase
 from backend.db.writer import (
     update_article_ml_fields,
