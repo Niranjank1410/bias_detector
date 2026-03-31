@@ -29,7 +29,7 @@ class ArticleResponse(BaseModel):
     url: str
     published_at: Optional[datetime] = None
     category: Optional[str] = None
-    ai_score: Optional[str] = None
+    ai_score: Optional[float] = None
     source: Optional[SourceSummary] = None
 
 class BiasReportResponse(BaseModel):
