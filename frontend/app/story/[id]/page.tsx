@@ -126,8 +126,8 @@ export default function StoryDetailPage() {
                     borderRadius: 8,
                     fontSize: 12,
                   }}
-                  formatter={(val: number, _name: string, props: { payload: { label: string } }) => [
-                    `${val}% (${props.payload.label})`,
+                  formatter={(val: unknown, _name: unknown, props: any) => [
+                    `${val}% (${props?.payload?.label ?? ""})`,
                     "Sentiment",
                   ]}
                 />

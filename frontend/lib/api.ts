@@ -82,6 +82,7 @@ export interface Category {
 async function fetchAPI<T>(path: string): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     next: { revalidate: 300 }, // Cache for 5 minutes
+    signal: AbortSignal.timeout(35000), // 35s timeout to handle Render cold starts
   });
   if (!res.ok) throw new Error(`API error: ${res.status} ${path}`);
   return res.json();

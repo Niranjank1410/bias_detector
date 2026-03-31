@@ -58,7 +58,7 @@ export default function SourcesPage() {
             <YAxis tick={{ fontSize: 10, fill: "#5a5a72" }} unit="%" />
             <Tooltip
               contentStyle={{ background: "#111118", border: "1px solid #2a2a3a", borderRadius: 8, fontSize: 12 }}
-              formatter={(val: number) => `${val.toFixed(1)}%`}
+              formatter={(val: unknown) => `${(val as number).toFixed(1)}%`}
             />
             <Bar dataKey="Positive" stackId="a" fill="#22c55e" radius={[0, 0, 0, 0]} />
             <Bar dataKey="Neutral" stackId="a" fill="#2a2a3a" />

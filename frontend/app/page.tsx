@@ -35,7 +35,6 @@ export default function HomePage() {
       });
 
       // Client-side search filter
-      // (Week 5 simple version — Week 6+ can move this to backend)
       if (search) {
         const q = search.toLowerCase();
         data.stories = data.stories.filter(s =>
@@ -140,8 +139,12 @@ export default function HomePage() {
 
       {/* Stories grid */}
       {loading ? (
-        <div className="flex items-center justify-center py-24">
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
           <Loader2 className="w-6 h-6 text-text-muted animate-spin" />
+          <p className="text-text-muted text-sm">Loading stories...</p>
+          <p className="text-text-muted text-xs opacity-60">
+            First load may take ~30s while the server wakes up
+          </p>
         </div>
       ) : !stories?.stories.length ? (
         <div className="text-center py-24 text-text-muted">

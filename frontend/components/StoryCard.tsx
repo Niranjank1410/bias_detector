@@ -28,7 +28,7 @@ export default function StoryCard({ story, onCategoryClick }: Props) {
           <CategoryPill
             category={story.category}
             onClick={story.category && onCategoryClick
-              ? (e) => { e?.stopPropagation?.(); onCategoryClick(story.category!); }
+              ? () => { onCategoryClick(story.category!); }
               : undefined
             }
           />
