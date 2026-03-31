@@ -30,7 +30,7 @@ app.add_middleware(
     # In production, replace "*" with actual frontend url
     allow_origins=[
         "http://localhost:3000",                          # Local dev
-        "https://bias-detector-niranjank1410.vercel.app", # Production — replace with your actual URL
+        "https://bias-detector-nine.vercel.app", # Production — replace with your actual URL
         "https://*.vercel.app",                           # All Vercel preview deployments
     ],
     allow_credentials=True,
