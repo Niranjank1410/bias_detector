@@ -76,7 +76,37 @@ export default function HomePage() {
           News analysed for framing bias across {categories.length} categories
         </p>
       </div>
-
+      {/* Stats bar */}
+      {stories && (
+        <div className="flex items-center gap-6 mb-6 p-4 bg-bg-secondary border border-bg-border rounded-xl">
+          <div className="text-center">
+            <div className="text-lg font-bold text-text-primary">{stories.total}</div>
+            <div className="text-xs text-text-muted">Total Stories</div>
+          </div>
+          <div className="w-px h-8 bg-bg-border" />
+          <div className="text-center">
+            <div className="text-lg font-bold text-accent-blue">
+              {categories.length}
+            </div>
+            <div className="text-xs text-text-muted">Categories</div>
+          </div>
+          <div className="w-px h-8 bg-bg-border" />
+          <div className="text-center">
+            <div className="text-lg font-bold text-accent-purple">
+              {stories.stories.filter(s => (s.source_count ?? 0) > 1).length}
+            </div>
+            <div className="text-xs text-text-muted">Multi-source</div>
+          </div>
+          <div className="w-px h-8 bg-bg-border" />
+          <div className="text-center">
+            <div className="text-lg font-bold text-accent-orange">
+              {stories.stories.filter(s => (s.divergence_score ?? 0) > 30).length}
+            </div>
+            <div className="text-xs text-text-muted">High Divergence</div>
+          </div>
+        </div>
+      )}
+      
       {/* Search bar */}
       <div className="flex gap-2 mb-6">
         <div className="relative flex-1">
@@ -147,8 +177,26 @@ export default function HomePage() {
           </p>
         </div>
       ) : !stories?.stories.length ? (
-        <div className="text-center py-24 text-text-muted">
-          No stories found for these filters.
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <div className="w-12 h-12 rounded-full bg-bg-secondary border border-bg-border flex items-center justify-center">
+            <Search className="w-5 h-5 text-text-muted" />
+          </div>
+          <p className="text-text-primary font-medium">No stories found</p>
+          <p className="text-text-muted text-sm text-center max-w-sm">
+            {search
+              ? `No headlines matching "${search}". Try different keywords.`
+              : selectedCategory
+              ? `No ${selectedCategory} stories yet. Try a different category.`
+              : "No stories available yet. Run the pipeline to fetch articles."}
+          </p>
+          {(search || selectedCategory) && (
+            <button
+              onClick={() => { setSearch(""); setSearchInput(""); setSelectedCategory(null); }}
+              className="text-sm text-accent-blue hover:underline mt-1"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : (
         <>

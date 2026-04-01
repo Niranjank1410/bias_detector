@@ -14,7 +14,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   Tooltip
 } from "recharts";
-import { ExternalLink, Loader2, ArrowLeft } from "lucide-react";
+import { ExternalLink, Loader2, ArrowLeft, Users } from "lucide-react";
 import Link from "next/link";
 
 const SENTIMENT_COLOUR: Record<string, string> = {
@@ -78,7 +78,12 @@ export default function StoryDetailPage() {
       <div className="mb-8">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <CategoryPill category={story.category} />
-          <DivergenceScore score={story.divergence_score} />
+          <div className="flex items-center gap-1.5">
+            <DivergenceScore score={story.divergence_score} />
+            <span className="text-xs text-text-muted" title="How differently sources covered this story. Higher = more disagreement.">
+                ⓘ
+            </span>
+          </div>
           {story.event_date && (
             <span className="text-xs text-text-muted">
               {new Date(story.event_date).toLocaleDateString("en-GB", {
@@ -92,10 +97,22 @@ export default function StoryDetailPage() {
         <h1 className="text-2xl font-bold text-text-primary leading-snug">
           {story.canonical_headline}
         </h1>
-        <p className="text-text-muted text-sm mt-2">
-          Covered by {story.source_count ?? story.articles.length} source
-          {(story.source_count ?? 0) > 1 ? "s" : ""}
-        </p>
+        <div className="flex items-center gap-3 mt-2">
+          <span className="text-text-muted text-sm flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5" />
+            {story.source_count ?? story.articles.length} source{(story.source_count ?? 0) > 1 ? "s" : ""}
+          </span>
+          {(story.divergence_score ?? 0) > 30 && (
+            <span className="text-xs text-accent-orange bg-accent-orange/10 border border-accent-orange/20 px-2 py-0.5 rounded-full">
+              Highly contested
+            </span>
+          )}
+          {(story.divergence_score ?? 0) <= 15 && (story.source_count ?? 0) > 1 && (
+            <span className="text-xs text-accent-green bg-accent-green/10 border border-accent-green/20 px-2 py-0.5 rounded-full">
+              Broad consensus
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Bias visualisation — only show if multiple sources */}
