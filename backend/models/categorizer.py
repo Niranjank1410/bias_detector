@@ -39,6 +39,50 @@ _classifier = pipeline(
 )
 print("[Categoriser] Model ready.")
 
+# Keyword rules that override the ML model when confidence is low.
+# Format: {category: [keywords that strongly indicate this category]}
+KEYWORD_OVERRIDES = {
+    "Sport": [
+        "premier league", "champions league", "fifa", "uefa", "formula 1", "f1",
+        "grand prix", "wimbledon", "cricket", "rugby", "nfl", "nba", "transfer",
+        "goal", "match", "tournament", "championship", "olympic", "paralympic",
+    ],
+    "Technology": [
+        "artificial intelligence", "ai model", "chatgpt", "openai", "google deepmind",
+        "iphone", "android", "cybersecurity", "hack", "data breach", "startup",
+        "silicon valley", "semiconductor", "app store", "software update",
+    ],
+    "Health": [
+        "nhs", "hospital", "cancer", "vaccine", "mental health", "pandemic",
+        "clinical trial", "medication", "surgery", "disease outbreak", "who ",
+    ],
+    "Business": [
+        "stock market", "ftse", "nasdaq", "interest rate", "inflation", "gdp",
+        "central bank", "hedge fund", "ipo", "merger", "acquisition", "earnings",
+    ],
+    "Environment": [
+        "climate change", "global warming", "carbon", "net zero", "renewable",
+        "solar", "wind farm", "biodiversity", "deforestation", "plastic pollution",
+    ],
+}
+
+
+def keyword_override(title: str, summary: str, ml_category: str, ml_confidence: float) -> str:
+    """
+    Checks if strong keyword signals should override the ML prediction.
+    Only overrides when ML confidence is below 0.6.
+    """
+    if ml_confidence >= 0.6:
+        return ml_category  # Trust the model when it's confident
+
+    text = f"{title} {summary}".lower()
+
+    for category, keywords in KEYWORD_OVERRIDES.items():
+        for keyword in keywords:
+            if keyword in text:
+                return category
+
+    return ml_category
 
 def categorize_article(title: str, summary: str = "") -> dict:
     """
@@ -65,11 +109,22 @@ def categorize_article(title: str, summary: str = "") -> dict:
         # not multiple simultaneously true labels
         multi_label = False,
     )
-    # result looks like:
-    # {'labels': ['Politics', 'World News', ...], 'scores': [0.91, 0.05, ...]}
-    # Labels and scores are sorted highest-to-lowest
+
+    top_category = result["labels"][0]
+    top_score = result["scores"][0]
+    
+    # If confidence is low, fall back to "World News"
+    # rather than making a bad guess. 0.35 is a good threshold for
+    # bart-large-mnli on news text.
+
+    if top_score < 0.35:
+        top_category = "World News"
+
+    # Applying keyword override for low-confidence predictions
+    final_category = keyword_override(title, summary, top_category, top_score)
     return {
-        "category": result["labels"][0],
+        "category": final_category,
+        "confidence": top_score,
         "scores": dict(zip(result["labels"], result["scores"])),
     }
 

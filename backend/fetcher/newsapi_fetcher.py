@@ -16,7 +16,7 @@ load_dotenv()
 
 newsapi = NewsApiClient(api_key=os.getenv("NEWSAPI_KEY"))
 
-# These are the NesAPI source IDs we want to pull from.
+# These are the NewsAPI source IDs we want to pull from.
 # Find more at: https://newsapi.org/docs/endpoints/sources
 NEWSAPI_SOURCES = [
 	"bbc-news",
@@ -25,6 +25,12 @@ NEWSAPI_SOURCES = [
 	"the-guardian-uk",
 	"the-telegraph",
 	"independant",
+	"sky-news",
+	"fox-news",
+	"npr",
+	"france24",
+	"the-hindu",
+	"dw-news"
 ]
 
 def fetch_top_headlines() -> list[dict]:
