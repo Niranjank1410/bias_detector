@@ -32,15 +32,8 @@ export default function HomePage() {
         page_size: 20,
         category: selectedCategory ?? undefined,
         min_sources: multiSourceOnly ? 2 : 1,
+        search: search || undefined,    //pass search to backend
       });
-
-      // Client-side search filter
-      if (search) {
-        const q = search.toLowerCase();
-        data.stories = data.stories.filter(s =>
-          s.canonical_headline.toLowerCase().includes(q)
-        );
-      }
 
       setStories(data);
     } catch (e) {

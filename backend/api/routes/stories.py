@@ -21,10 +21,11 @@ router = APIRouter(prefix = "/stories", tags =["Stories"])
 
 @router.get("", response_model=PaginatedStories)
 def get_stories(
-    page: int = Query(default=1, ge=1, description="Page number"),
-    page_size: int = Query(default=20, ge=1, le=100, description="Results per page"),
-    category: str = Query(default=None, description="Filter by category"),
-    min_sources: int = Query(default=1, ge=1, description="Minimum number of sources"),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    category: str = Query(default=None),
+    min_sources: int = Query(default=1, ge=1),
+    search: str = Query(default=None, description="Search headlines"),
 ):
     """
     Returns a paginated list of story clusters.
@@ -44,6 +45,9 @@ def get_stories(
     # Apply optional category filter
     if category:
         query = query.eq("category", category)
+    
+    if search:
+        query = query.ilike("canonical_headline", f"%{search}")
 
     # Apply pagination.
     # Supabase uses range() for pagination: range(start, end) is inclusive.
