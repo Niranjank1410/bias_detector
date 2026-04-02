@@ -149,15 +149,32 @@ def categorise_batch(articles: list[dict]) -> list[dict]:
 
     # Pipeline accepts a list for batch processing - much faster than
     # calling one-by-one because GPU can process multiple inputs at once
-    results = _classifier(
-        texts,
-        candidte_label = CATEGORIES,
-        multi_label = False,
-        batch_size = 8      # Process 8 at a time - tune down if there are OOM (Out Of Memory) errors
-    )
+    CHUNK_SIZE = 16
+    all_results = []
 
-    for article, result in zip(articles, results):
-        article["category"] = result["labels"][0]
+    for i in range(0, len(texts), CHUNK_SIZE):
+        chunk = texts[i:i + CHUNK_SIZE]
+        results = _classifier(
+            chunk,
+            candidate_labels=CATEGORIES,
+            multi_label=False,
+            batch_size=CHUNK_SIZE,
+        )
+        all_results.extend(results)
+        print(f"[Categoriser] {min(i + CHUNK_SIZE, len(texts))}/{len(texts)}")
+
+    for article, result in zip(articles, all_results):
+        top_category = result["labels"][0]
+        top_score = result["scores"][0]
+        if top_score < 0.35:
+            top_category = "World News"
+        final_category = keyword_override(
+            article.get("title", ""),
+            article.get("summary", ""),
+            top_category,
+            top_score
+        )
+        article["category"] = final_category
         article["category_scores"] = dict(zip(result["labels"], result["scores"]))
 
     print(f"[Categoriser] Done.")

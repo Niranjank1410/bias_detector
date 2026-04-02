@@ -84,12 +84,35 @@ def analyse_sentiment_batch(articles: list[dict]) -> list[dict]:
     """
     print(f"[Sentiment] Analysing {len(articles)} articles...")
 
+    texts = []
     for article in articles:
         text = article.get("body") or f"{article.get('title', '')} {article.get('summary', '')}"
-        result = analyse_sentiment(text)
-        article["sentiment_label"] = result["label"]
-        article["sentiment_score"] = result["score"]
-        article["sentiment_scores"] = result["scores"]
+        texts.append(text[:512])
+
+    CHUNK_SIZE = 32
+    all_results = []
+
+    for i in range(0, len(texts), CHUNK_SIZE):
+        chunk = texts[i:i + CHUNK_SIZE]
+        results = _sentiment(
+            chunk,
+            batch_size=CHUNK_SIZE,
+            truncation=True,
+            max_length=512,
+        )
+        all_results.extend(results)
+        print(f"[Sentiment] {min(i + CHUNK_SIZE, len(texts))}/{len(texts)}")
+
+    for article, result_list in zip(articles, all_results):
+        sorted_result = sorted(result_list, key=lambda x: x["score"], reverse=True)
+        top = sorted_result[0]
+        label = LABEL_MAP.get(top["label"].lower(), top["label"].lower())
+        article["sentiment_label"] = label
+        article["sentiment_score"] = round(top["score"], 4)
+        article["sentiment_scores"] = {
+            LABEL_MAP.get(r["label"].lower(), r["label"].lower()): round(r["score"], 4)
+            for r in result_list
+        }
 
     print(f"[Sentiment] Done.")
     return articles

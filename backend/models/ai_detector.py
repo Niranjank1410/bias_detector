@@ -79,13 +79,34 @@ def detect_ai_batch(articles: list[dict]) -> list[dict]:
     """
     print(f"[AI Detector] Processing {len(articles)} articles...")
 
+    texts = []
     for article in articles:
-        # Prefer body text — more text = more reliable detection.
-        # Fall back to title + summary if body is empty (common with RSS)
         text = article.get("body") or f"{article.get('title', '')} {article.get('summary', '')}"
-        result = detect_ai(text)
-        article["ai_score"] = result["ai_score"]
-        article["ai_label"] = result["label"]
+        texts.append(text[:1024])
+
+    CHUNK_SIZE = 32
+    all_results = []
+
+    for i in range(0, len(texts), CHUNK_SIZE):
+        chunk = texts[i:i + CHUNK_SIZE]
+        results = _detector(
+            chunk,
+            batch_size=CHUNK_SIZE,
+            truncation=True,
+            max_length=512,
+        )
+        all_results.extend(results)
+        print(f"[AI Detector] {min(i + CHUNK_SIZE, len(texts))}/{len(texts)}")
+
+    for article, result in zip(articles, all_results):
+        label = result["label"]
+        confidence = result["score"]
+        if "human" in label.lower():
+            ai_score = 1.0 - confidence
+        else:
+            ai_score = confidence
+        article["ai_score"] = round(ai_score, 4)
+        article["ai_label"] = "Human" if "human" in label.lower() else "AI"
 
     print(f"[AI Detector] Done.")
     return articles

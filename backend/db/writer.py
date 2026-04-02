@@ -187,20 +187,66 @@ def save_sentiment_reports(cluster_id: str, article_id: str, source_id: str, sen
 def update_cluster_categories():
     """
     Propagates article categories up to their parent story clusters.
-    
-    For each cluster, finds the most common category among its articles
-    and sets that as the cluster's category. This runs after ML processing
-    so categories are available for filtering on the frontend.
+    Uses a single SQL query instead of per-cluster requests to avoid
+    connection termination on large datasets.
     """
     print("[DB] Updating cluster categories...")
 
-    # Fetch all clusters that have no category yet
+    try:
+        # Single SQL query that finds the most common category per cluster
+        # and updates all clusters in one operation
+        supabase.rpc("update_cluster_categories_bulk").execute()
+        print("[DB] Cluster categories updated via bulk SQL.")
+    except Exception:
+        # Fallback: process in small batches if RPC not available
+        _update_cluster_categories_batched()
+    
+def _update_cluster_categories_batched():
+    """
+    Fallback batch processor for cluster categories.
+    Processes 50 clusters at a time to avoid connection timeouts.
+    """
     clusters_response = (
         supabase.table("story_clusters")
         .select("id")
         .is_("category", "null")
+        .limit(200)
         .execute()
     )
+
+    updated = 0
+    for cluster in clusters_response.data:
+        cluster_id = cluster["id"]
+
+        try:
+            articles_response = (
+                supabase.table("cluster_articles")
+                .select("articles(category)")
+                .eq("cluster_id", cluster_id)
+                .execute()
+            )
+
+            categories = [
+                row["articles"]["category"]
+                for row in articles_response.data
+                if row.get("articles") and row["articles"].get("category")
+            ]
+
+            if not categories:
+                continue
+
+            most_common = max(set(categories), key=categories.count)
+            supabase.table("story_clusters").update({
+                "category": most_common
+            }).eq("id", cluster_id).execute()
+
+            updated += 1
+
+        except Exception as e:
+            print(f"[DB] Failed to update category for cluster {cluster_id}: {e}")
+            continue
+
+    print(f"[DB] Updated categories for {updated} clusters.")
 
     updated = 0
     for cluster in clusters_response.data:
