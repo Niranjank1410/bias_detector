@@ -100,7 +100,7 @@ def save_clusters(clusters: list[list[dict]], source_map: dict[str, str]):
         # Skip clusters that are unrealistically large.
         # A real story cluster from 5 sources should never have 74 articles.
         # Large clusters indicate the embeddings are too similar (generic content).
-        if len(cluster) > 15:
+        if len(cluster) > 20:
             print(f"[DB] Skipping oversized cluster ({len(cluster)} articles) — likely generic content")
             continue
 

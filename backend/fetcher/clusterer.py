@@ -45,8 +45,11 @@ def generate_embeddings(articles: list[dict]) -> np.ndarray:
     for article in articles:
         title = article.get("title", "")
         summary = article.get("summary", "")
-        # Combine with a separator so the model treats them as one passage
-        combined = f"{title}. {summary}".strip()
+        if summary and len(summary) > 30:
+            combined = f"{title}. {title}. {summary}".strip()
+        else:
+            combined = f"{title}. {title}".strip()
+        
         texts.append(combined)
 
     # encode() processes all texts in a batch, which is much faster
